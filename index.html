@@ -83,6 +83,14 @@
             </div>
         </div>
 
+        <!-- Risk Distribution Chart -->
+        <div class="card">
+            <div class="card-header">Risk Distribution</div>
+            <div class="chart-container" style="height: 250px;">
+                <canvas id="riskChart"></canvas>
+            </div>
+        </div>
+
         <!-- Top Domains with AI Inspector -->
         <div class="card">
             <div class="card-header">Top 50 Domains Visited</div>
@@ -93,11 +101,23 @@
         </div>
 
         <!-- Safety Scanner -->
-        <div class="card">
+        <div class="card full-width">
             <div class="card-header">
-                Safety Scanner Results
-                <span class="risk-badge risk-safe" id="globalRiskBadge">System Clean</span>
+                <div>
+                    Safety Scanner Results
+                    <span class="risk-badge risk-safe" id="globalRiskBadge">System Clean</span>
+                </div>
+                <button class="btn-secondary" onclick="exportReport()">📥 Export Report</button>
             </div>
+
+            <div class="filter-group">
+                <button class="filter-btn active" onclick="filterRisk('all')">All</button>
+                <button class="filter-btn" onclick="filterRisk(5)">Critical</button>
+                <button class="filter-btn" onclick="filterRisk(4)">High</button>
+                <button class="filter-btn" onclick="filterRisk(3)">Medium</button>
+                <button class="filter-btn" onclick="filterRisk(2)">Low</button>
+            </div>
+
             <div style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">
                 Scanning for adult/risk keywords including Filipino slang.
             </div>

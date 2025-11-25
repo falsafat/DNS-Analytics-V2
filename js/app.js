@@ -5,7 +5,9 @@ let CURRENT_DATA = {
     hourly: new Array(24).fill(0),
     topDomains: [],
     riskyDomains: [],
-    maxRiskLevel: 1
+    maxRiskLevel: 1,
+    riskDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    filter: 'all'
 };
 
 // 5-Level Risk Mapping
@@ -30,14 +32,15 @@ const RISK_MAPPING = {
 };
 
 const RISK_CONFIG = {
-    1: { label: "System Clean", color: "var(--success)", class: "risk-safe" },
+    1: { label: "System Clean", color: "#51cf66", class: "risk-safe" },
     2: { label: "Low Risk Found", color: "#4dabf7", class: "risk-low" },
     3: { label: "Medium Risk Found", color: "#fcc419", class: "risk-medium" },
     4: { label: "High Risk Found", color: "#ff922b", class: "risk-high" },
-    5: { label: "CRITICAL RISK", color: "var(--danger)", class: "risk-critical" }
+    5: { label: "CRITICAL RISK", color: "#ff6b6b", class: "risk-critical" }
 };
 
 let hourlyChart = null; // Chart.js instance
+let riskChart = null; // Doughnut Chart instance
 
 // --- INITIALIZATION ---
 window.onload = () => {
@@ -45,8 +48,9 @@ window.onload = () => {
     loadTheme();
     setupFileUpload();
 
-    // Initialize empty chart
+    // Initialize charts
     initChart();
+    initRiskChart();
 };
 
 // --- THEME HANDLING ---
@@ -58,9 +62,8 @@ function toggleTheme() {
     localStorage.setItem('theme', next);
 
     // Update chart colors if it exists
-    if (hourlyChart) {
-        updateChartColors(next);
-    }
+    if (hourlyChart) updateChartColors(next);
+    if (riskChart) updateRiskChartColors(next);
 }
 
 function loadTheme() {
@@ -111,10 +114,10 @@ async function analyzeDomain(domain) {
     title.innerHTML = `✨ Analyzing: ${domain}`;
     content.innerHTML = '<div style="text-align:center"><div class="loading-spinner"></div><br>Asking Gemini...</div>';
 
-    const prompt = `You are a network security expert for parents. Explain the domain '${domain}'. 
-    1. What app or service owns it? 
-    2. Is it safe for children, or is it a tracker/adult site? 
-    3. What is it typically used for (e.g. video streaming, ads, background updates)? 
+    const prompt = `You are a network security expert for parents. Explain the domain '${domain}'.
+    1. What app or service owns it?
+    2. Is it safe for children, or is it a tracker/adult site?
+    3. What is it typically used for (e.g. video streaming, ads, background updates)?
     Keep it brief and easy to understand.`;
 
     try {
@@ -136,14 +139,14 @@ async function generateActivityReport() {
     const peakHourIndex = CURRENT_DATA.hourly.indexOf(Math.max(...CURRENT_DATA.hourly));
     const peakTime = `${peakHourIndex}:00 - ${peakHourIndex + 1}:00`;
 
-    const prompt = `You are a helpful parenting assistant analyzing network logs. 
+    const prompt = `You are a helpful parenting assistant analyzing network logs.
     Here is the data summary:
     - Top Apps/Domains: ${top5}
     - Peak Usage Hour: ${peakTime}
     - Total Queries: ${CURRENT_DATA.total}
-    
-    Write a short, empathetic paragraph analyzing the child's internet habits. 
-    Focus specifically on sleep schedule risks if the peak usage is late at night (10PM - 6AM). 
+
+    Write a short, empathetic paragraph analyzing the child's internet habits.
+    Focus specifically on sleep schedule risks if the peak usage is late at night (10PM - 6AM).
     Suggest 1 actionable tip for the parent.`;
 
     try {
@@ -160,6 +163,7 @@ function renderDashboard(data) {
     document.getElementById('blockedQueries').innerText = data.blocked.toLocaleString();
 
     updateChartData(data.hourly);
+    updateRiskChartData(data.riskDistribution);
 
     const list = document.getElementById('topDomainsList');
     list.innerHTML = '';
@@ -186,22 +190,40 @@ function renderDashboard(data) {
 
     const riskInfo = RISK_CONFIG[data.maxRiskLevel];
     globalBadge.className = `risk-badge ${riskInfo.class}`;
-    globalBadge.style.backgroundColor = riskInfo.color; // Ensure color is applied if class isn't enough
-    globalBadge.style.color = data.maxRiskLevel >= 3 ? '#000' : '#fff'; // Contrast text
-    if (data.maxRiskLevel === 1) globalBadge.style.color = '#fff'; // Safe is green/white
+    globalBadge.style.backgroundColor = riskInfo.color;
+    globalBadge.style.color = data.maxRiskLevel >= 3 ? '#000' : '#fff';
+    if (data.maxRiskLevel === 1) globalBadge.style.color = '#fff';
 
     globalBadge.innerText = riskInfo.label;
 
-    const riskCount = data.riskyDomains.length;
-    document.getElementById('riskQueries').innerText = riskCount;
-    document.getElementById('riskQueries').style.color = riskCount > 0 ? RISK_CONFIG[data.maxRiskLevel].color : 'var(--success)';
+    // Filter Logic
+    let filteredRisks = data.riskyDomains;
+    if (data.filter !== 'all') {
+        filteredRisks = filteredRisks.filter(d => d.level === parseInt(data.filter));
+    }
+
+    // Update Filter Buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.innerText === 'All' && data.filter === 'all') btn.classList.add('active');
+        if (btn.innerText === 'Critical' && data.filter == 5) btn.classList.add('active');
+        if (btn.innerText === 'High' && data.filter == 4) btn.classList.add('active');
+        if (btn.innerText === 'Medium' && data.filter == 3) btn.classList.add('active');
+        if (btn.innerText === 'Low' && data.filter == 2) btn.classList.add('active');
+    });
+
+    const riskCount = filteredRisks.length;
+    // Only show count for total risks, not filtered, in the KPI card?
+    // Actually let's show total risks in KPI, but list shows filtered.
+    document.getElementById('riskQueries').innerText = data.riskyDomains.length;
+    document.getElementById('riskQueries').style.color = data.riskyDomains.length > 0 ? RISK_CONFIG[data.maxRiskLevel].color : 'var(--success)';
 
     if (riskCount > 0) {
         riskContainer.innerHTML = '';
         // Sort by risk level descending
-        data.riskyDomains.sort((a, b) => b.level - a.level);
+        filteredRisks.sort((a, b) => b.level - a.level);
 
-        data.riskyDomains.forEach(d => {
+        filteredRisks.forEach(d => {
             const div = document.createElement('div');
             div.className = 'domain-item';
             const levelInfo = RISK_CONFIG[d.level];
@@ -216,8 +238,38 @@ function renderDashboard(data) {
             riskContainer.appendChild(div);
         });
     } else {
-        riskContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">✅ No explicit adult domains found.<br><small>System Clean (Level 1)</small></div>`;
+        if (data.riskyDomains.length > 0 && riskCount === 0) {
+            riskContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">No domains found for this filter.</div>`;
+        } else {
+            riskContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">✅ No explicit adult domains found.<br><small>System Clean (Level 1)</small></div>`;
+        }
     }
+}
+
+function filterRisk(level) {
+    CURRENT_DATA.filter = level;
+    renderDashboard(CURRENT_DATA);
+}
+
+function exportReport() {
+    if (CURRENT_DATA.riskyDomains.length === 0) {
+        alert("No risky domains to export!");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,Domain,Risk Level,Count\n";
+    CURRENT_DATA.riskyDomains.forEach(row => {
+        const levelName = RISK_CONFIG[row.level].label;
+        csvContent += `${row.name},${levelName} (L${row.level}),${row.count}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "dns_risk_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // --- CHART.JS INTEGRATION ---
@@ -273,10 +325,56 @@ function initChart() {
     });
 }
 
+function initRiskChart() {
+    const ctx = document.getElementById('riskChart').getContext('2d');
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+
+    riskChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Safe', 'Low', 'Medium', 'High', 'Critical'],
+            datasets: [{
+                data: [100, 0, 0, 0, 0], // Default
+                backgroundColor: [
+                    RISK_CONFIG[1].color,
+                    RISK_CONFIG[2].color,
+                    RISK_CONFIG[3].color,
+                    RISK_CONFIG[4].color,
+                    RISK_CONFIG[5].color
+                ],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { color: isDark ? '#c1c2c5' : '#495057' }
+                }
+            }
+        }
+    });
+}
+
 function updateChartData(newData) {
     if (hourlyChart) {
         hourlyChart.data.datasets[0].data = newData;
         hourlyChart.update();
+    }
+}
+
+function updateRiskChartData(distribution) {
+    if (riskChart) {
+        riskChart.data.datasets[0].data = [
+            distribution[1],
+            distribution[2],
+            distribution[3],
+            distribution[4],
+            distribution[5]
+        ];
+        riskChart.update();
     }
 }
 
@@ -295,6 +393,13 @@ function updateChartColors(theme) {
     hourlyChart.options.plugins.tooltip.borderColor = gridColor;
 
     hourlyChart.update();
+}
+
+function updateRiskChartColors(theme) {
+    if (!riskChart) return;
+    const isDark = theme !== 'light';
+    riskChart.options.plugins.legend.labels.color = isDark ? '#c1c2c5' : '#495057';
+    riskChart.update();
 }
 
 // --- FILE PROCESSING ---
@@ -341,6 +446,7 @@ function analyzeCSV(rows) {
     let hourly = new Array(24).fill(0);
     let risky = [];
     let maxRisk = 1;
+    let riskDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
     for (let i = 1; i < rows.length; i++) {
         const cols = rows[i].split(',');
@@ -393,6 +499,8 @@ function analyzeCSV(rows) {
             }
         }
 
+        riskDist[domainRiskLevel]++;
+
         if (domainRiskLevel > 1) {
             risky.push({ name: domain, count: 1, level: domainRiskLevel });
             if (domainRiskLevel > maxRisk) maxRisk = domainRiskLevel;
@@ -424,7 +532,9 @@ function analyzeCSV(rows) {
         hourly: hourly,
         topDomains: sortedDomains,
         riskyDomains: riskyFinal,
-        maxRiskLevel: maxRisk
+        maxRiskLevel: maxRisk,
+        riskDistribution: riskDist,
+        filter: 'all'
     };
 
     renderDashboard(CURRENT_DATA);
