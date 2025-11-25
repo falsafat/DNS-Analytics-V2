@@ -294,53 +294,54 @@ async function verifyRisksWithAI() {
     btn.innerText = "✨ Verifying...";
 
     const domainsToVerify = CURRENT_DATA.riskyDomains.filter(d => !d.verified);
-    let processed = 0;
+    const BATCH_SIZE = 15;
+    let processedCount = 0;
 
-    for (let domainObj of domainsToVerify) {
-        btn.innerText = `✨ Verifying (${processed + 1}/${domainsToVerify.length})...`;
+    for (let i = 0; i < domainsToVerify.length; i += BATCH_SIZE) {
+        const batch = domainsToVerify.slice(i, i + BATCH_SIZE);
+        btn.innerText = `✨ Verifying batch ${Math.ceil((i + 1) / BATCH_SIZE)}/${Math.ceil(domainsToVerify.length / BATCH_SIZE)}...`;
 
-        const prompt = `Analyze the domain '${domainObj.name}'. 
-        Rate its safety risk for children on a scale of 1-5 based on these criteria:
+        const domainList = batch.map(d => d.name).join(", ");
+
+        const prompt = `Analyze the following domains for child safety risks.
+        Domains: ${domainList}
+        
+        For EACH domain, rate the risk (1-5) and provide a very brief reason (max 10 words).
+        Criteria:
         1: Safe/Clean
-        2: Low Risk (Ambiguous but likely safe)
+        2: Low Risk (Ambiguous)
         3: Medium Risk (Suggestive)
         4: High Risk (Explicit)
-        5: Critical (Severe/Malicious)
-        
-        Also provide a very brief (max 10 words) reason.
-        Format: Level|Reason
-        Example: 5|Explicit adult content`;
+        5: Critical (Severe)
+
+        Return a JSON ARRAY only. No markdown.
+        Format: [{"domain": "example.com", "level": 1, "reason": "Safe tech site"}, ...]`;
 
         try {
-            const result = await callGemini(prompt);
-            // Expected format: "5|Explicit adult content"
-            const parts = result.trim().split('|');
+            let result = await callGemini(prompt);
+            // Clean up potential markdown code blocks
+            result = result.replace(/```json/g, '').replace(/```/g, '').trim();
 
-            if (parts.length >= 2) {
-                const newLevel = parseInt(parts[0].trim());
-                const reason = parts[1].trim();
+            const analyzedBatch = JSON.parse(result);
 
-                if (!isNaN(newLevel)) {
-                    domainObj.level = newLevel;
-                    domainObj.reason = reason;
+            analyzedBatch.forEach(item => {
+                const domainObj = batch.find(d => d.name === item.domain);
+                if (domainObj) {
+                    domainObj.level = item.level;
+                    domainObj.reason = item.reason;
                     domainObj.verified = true;
                 }
-            } else {
-                // Fallback if AI messes up format, try to just get number
-                const newLevel = parseInt(result.trim());
-                if (!isNaN(newLevel)) {
-                    domainObj.level = newLevel;
-                    domainObj.verified = true;
-                }
-            }
+            });
 
         } catch (e) {
-            console.error("Verification failed for", domainObj.name, e);
+            console.error("Batch verification failed", e);
+            // Fallback: Mark these as unverified or try one-by-one? 
+            // For now, just log error.
         }
 
-        processed++;
+        processedCount += batch.length;
         // Small delay to avoid rate limits
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 1500));
     }
 
     // Re-evaluate max risk and distribution
