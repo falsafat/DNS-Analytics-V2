@@ -12,31 +12,49 @@ let CURRENT_DATA = {
 
 // 5-Level Risk Mapping
 const RISK_MAPPING = {
-    5: [ // Critical: Major Sites & Severe
+    5: [ // Explicit Adult (Block)
         "pornhub", "xvideos", "xnxx", "chaturbate", "livejasmin", "brazzers", "redtube", "youporn",
-        "onlyfans", "nhentai", "sharmuta", "kantot", "iyot", "rape", "incest", "pedophile"
+        "onlyfans", "nhentai", "sharmuta", "kantot", "iyot", "rape", "incest", "pedophile",
+        "eporner", "hqporner", "spankbang", "xhamster", "beeg", "youjizz", "motherless", "tube8",
+        "keezmovies", "sunporno", "madthumbs", "extremetube", "slutload", "xxxymovies", "vlxx", "xvideos2",
+        "beastiality", "bestiality", "zoophilia", "childporn", "lolita",
+        // Filipino Specific
+        "pinayflix", "pinaysex", "pinaywalker", "kantutan", "iyutan", "boso", "scandalpinay", "bold-pinay",
+        // Arabic Specific
+        "arabs-sex", "six-arabe", "jins-araby", "aflam-jins", "nik-araby", "kuss-araby", "sharmuta-araby",
+        // More English/Global
+        "adultwork", "cam4", "camsoda", "faphouse", "bangbros", "naughtyamerica", "realitykings", "teamskeet"
     ],
-    4: [ // High: Explicit Acts
+    4: [ // Mature & Gambling (Restrict)
         "porn", "sex", "xxx", "fuck", "gangbang", "creampie", "blowjob", "cum", "orgasm",
-        "bdsm", "fetish", "bondage", "bomba", "torjak", "jakol", "nik", "nekh", "jins", "ibahi"
+        "bdsm", "fetish", "bondage", "bomba", "torjak", "jakol", "nik", "nekh", "jins", "ibahi",
+        "casino", "bet", "poker", "gambling", "slots", "roulette", "vape", "weed", "drug", "cannabis",
+        "bet365", "1xbet", "888casino", "pokerstars", "draftkings", "fanduel", "jackpot", "lottery", "lotto", "bookie", "parlay", "wagering",
+        "marijuana", "thc", "cbd", "kush", "sativa", "indica", "bong", "shrooms", "psilocybin", "lsd", "acid", "cocaine", "heroin", "meth", "mdma", "ecstasy", "pill", "opioid",
+        "gore", "death", "suicide", "kill", "murder", "terror", "bomb", "weapon", "gun", "ammo", "execution", "beheading",
+        "tinder", "bumble", "grindr", "hinge", "okcupid", "match.com", "ashleymadison", "adultfriendfinder"
     ],
-    3: [ // Medium: Anatomy & Suggestive
+    3: [ // Slang & Suggestive (Monitor)
         "nude", "adult", "milf", "anal", "pussy", "dick", "cock", "boobs", "tits", "booty", "ass",
         "escort", "strip", "erotic", "kink", "hentai", "titi", "etits", "pekpek", "jabol",
-        "boldstar", "pokpok", "fubu", "kuss", "zebb", "siks", "tiz"
+        "boldstar", "pokpok", "fubu", "kuss", "zebb", "siks", "tiz",
+        "thot", "simp", "lewd", "nsfw", "ahegao", "ecchi", "yuri", "yaoi", "futanari", "upskirt", "downblouse",
+        "lason", "sabog", "bato", "chongke", "luti", "manyak", "quwad"
     ],
-    2: [ // Low: Ambiguous
-        "tube", "cam", "uncensored", "leaked", "amateur", "bold", "scandal", "pinay", "libog", "kayat", "viral", "dating"
+    2: [ // Suspicious (Verify)
+        "tube", "cam", "uncensored", "leaked", "amateur", "bold", "scandal", "pinay", "libog", "kayat", "viral", "dating",
+        "proxy", "vpn", "bypass", "unblock", "hide", "anonymizer",
+        "torrent", "magnet", "warez", "crack", "hack", "cheat"
     ]
     // Level 1 is Safe (default)
 };
 
 const RISK_CONFIG = {
-    1: { label: "System Clean", color: "#51cf66", class: "risk-safe" },
-    2: { label: "Low Risk Found", color: "#4dabf7", class: "risk-low" },
-    3: { label: "Medium Risk Found", color: "#fcc419", class: "risk-medium" },
-    4: { label: "High Risk Found", color: "#ff922b", class: "risk-high" },
-    5: { label: "CRITICAL RISK", color: "#ff6b6b", class: "risk-critical" }
+    1: { label: "Safe / Clean", color: "#51cf66", class: "risk-safe" },
+    2: { label: "Suspicious", color: "#4dabf7", class: "risk-low" },
+    3: { label: "Slang & Suggestive", color: "#fcc419", class: "risk-medium" },
+    4: { label: "Mature & Gambling", color: "#ff922b", class: "risk-high" },
+    5: { label: "Explicit Adult", color: "#ff6b6b", class: "risk-critical" }
 };
 
 let hourlyChart = null; // Chart.js instance
@@ -69,6 +87,10 @@ function toggleTheme() {
 function loadTheme() {
     const saved = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', saved);
+}
+
+function openHelp() {
+    document.getElementById('helpModal').style.display = 'flex';
 }
 
 // --- GEMINI AI INTEGRATION ---
@@ -206,10 +228,10 @@ function renderDashboard(data) {
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.innerText === 'All' && data.filter === 'all') btn.classList.add('active');
-        if (btn.innerText === 'Critical' && data.filter == 5) btn.classList.add('active');
-        if (btn.innerText === 'High' && data.filter == 4) btn.classList.add('active');
-        if (btn.innerText === 'Medium' && data.filter == 3) btn.classList.add('active');
-        if (btn.innerText === 'Low' && data.filter == 2) btn.classList.add('active');
+        if (btn.innerText === 'Explicit' && data.filter == 5) btn.classList.add('active');
+        if (btn.innerText === 'Mature' && data.filter == 4) btn.classList.add('active');
+        if (btn.innerText === 'Suggestive' && data.filter == 3) btn.classList.add('active');
+        if (btn.innerText === 'Suspicious' && data.filter == 2) btn.classList.add('active');
     });
 
     const riskCount = filteredRisks.length;
@@ -305,14 +327,14 @@ async function verifyRisksWithAI() {
 
         const prompt = `Analyze the following domains for child safety risks.
         Domains: ${domainList}
-        
+
         For EACH domain, rate the risk (1-5) and provide a very brief reason (max 10 words).
         Criteria:
         1: Safe/Clean
-        2: Low Risk (Ambiguous)
-        3: Medium Risk (Suggestive)
-        4: High Risk (Explicit)
-        5: Critical (Severe)
+        2: Suspicious (Ambiguous terms, verify required)
+        3: Slang & Suggestive (Hidden meanings, anatomy)
+        4: Mature & Gambling (Dating, drugs, gambling, explicit acts)
+        5: Explicit Adult (Known porn, severe content)
 
         Return a JSON ARRAY only. No markdown.
         Format: [{"domain": "example.com", "level": 1, "reason": "Safe tech site"}, ...]`;

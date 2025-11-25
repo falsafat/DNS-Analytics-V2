@@ -116,14 +116,14 @@
 
             <div class="filter-group">
                 <button class="filter-btn active" onclick="filterRisk('all')">All</button>
-                <button class="filter-btn" onclick="filterRisk(5)">Critical</button>
-                <button class="filter-btn" onclick="filterRisk(4)">High</button>
-                <button class="filter-btn" onclick="filterRisk(3)">Medium</button>
-                <button class="filter-btn" onclick="filterRisk(2)">Low</button>
+                <button class="filter-btn" onclick="filterRisk(5)">Explicit</button>
+                <button class="filter-btn" onclick="filterRisk(4)">Mature</button>
+                <button class="filter-btn" onclick="filterRisk(3)">Suggestive</button>
+                <button class="filter-btn" onclick="filterRisk(2)">Suspicious</button>
             </div>
 
             <div style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">
-                Scanning for adult/risk keywords including Filipino slang.
+                Scanning for adult content and potential safety risks using advanced keyword detection.
             </div>
             <div id="riskResults" class="domain-list">
                 <!-- Populated by JS -->
@@ -133,11 +133,53 @@
     </div>
 
     <!-- AI Modal -->
-    <div class="modal-overlay" id="aiModal" onclick="closeModal(event)">
-        <div class="modal">
-            <h2 id="modalTitle">✨ AI Analysis</h2>
-            <div id="modalContent" class="modal-content">Loading...</div>
-            <button class="modal-close" onclick="document.getElementById('aiModal').style.display='none'">Close</button>
+    <div id="aiModal" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'">
+        <div class="modal-content">
+            <h3 id="modalTitle">AI Analysis</h3>
+            <div id="modalContent">Loading...</div>
+            <button class="close-btn" onclick="document.getElementById('aiModal').style.display='none'">Close</button>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal-overlay" onclick="if(event.target === this) this.style.display='none'">
+        <div class="modal-content" style="max-width: 700px;">
+            <h3>🛡️ User Guide & Risk Levels</h3>
+            <div class="help-section">
+                <h4>🚀 Getting Started</h4>
+                <ol>
+                    <li><strong>Get API Key:</strong> Get a free Gemini API key from Google AI Studio.</li>
+                    <li><strong>Enter Key:</strong> Paste it in the top-right box.</li>
+                    <li><strong>Upload Data:</strong> Drag & drop your DNS CSV file.</li>
+                </ol>
+            </div>
+
+            <div class="help-section">
+                <h4>⚠️ Risk Level Definitions</h4>
+                <ul class="risk-legend">
+                    <li><span class="badge" style="background:#ff6b6b; color:white">Level 5: Explicit Adult</span>
+                        <strong>BLOCK</strong> - Known porn sites, severe content.</li>
+                    <li><span class="badge" style="background:#ff922b; color:white">Level 4: Mature & Gambling</span>
+                        <strong>RESTRICT</strong> - Dating, gambling, drugs, explicit acts.</li>
+                    <li><span class="badge" style="background:#fcc419; color:black">Level 3: Suggestive</span>
+                        <strong>MONITOR</strong> - Slang, anatomy, hidden meanings.</li>
+                    <li><span class="badge" style="background:#4dabf7; color:white">Level 2: Suspicious</span>
+                        <strong>VERIFY</strong> - Ambiguous terms (e.g., "tube", "vpn").</li>
+                    <li><span class="badge" style="background:#51cf66; color:white">Level 1: Safe</span> System clean.
+                    </li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h4>✨ AI Features</h4>
+                <ul>
+                    <li><strong>Verify Risks:</strong> Re-checks flagged domains with AI to reduce false positives.</li>
+                    <li><strong>Explain:</strong> Click "✨ Explain" on any domain to see what it is.</li>
+                    <li><strong>Activity Report:</strong> Generates a summary of habits and sleep risks.</li>
+                </ul>
+            </div>
+            <button class="close-btn" onclick="document.getElementById('helpModal').style.display='none'">Close
+                Guide</button>
         </div>
     </div>
 
