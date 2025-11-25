@@ -239,8 +239,13 @@ function renderDashboard(data) {
             div.innerHTML = `
                 <div class="domain-left">
                     <button class="ai-btn" onclick="analyzeDomain('${d.name}')">✨ Explain</button>
-                    <span style="color:${levelInfo.color}; font-weight:bold;">[L${d.level}] ${d.name}</span>
-                    ${d.verified ? '<span title="Verified by AI" style="cursor:help">✅</span>' : ''}
+                    <div style="display:flex; flex-direction:column;">
+                        <div>
+                            <span style="color:${levelInfo.color}; font-weight:bold;">[L${d.level}] ${d.name}</span>
+                            ${d.verified ? '<span title="Verified by AI" style="cursor:help">✅</span>' : ''}
+                        </div>
+                        ${d.reason ? `<small style="color:var(--text-muted); font-size:0.8em;">${d.reason}</small>` : ''}
+                    </div>
                 </div>
                 <span class="domain-count">${d.count}</span>
             `;
@@ -266,10 +271,11 @@ function exportReport() {
         return;
     }
 
-    let csvContent = "data:text/csv;charset=utf-8,Domain,Risk Level,Count,Verified\n";
+    let csvContent = "data:text/csv;charset=utf-8,Domain,Risk Level,Count,Verified,Reason\n";
     CURRENT_DATA.riskyDomains.forEach(row => {
         const levelName = RISK_CONFIG[row.level].label;
-        csvContent += `${row.name},${levelName} (L${row.level}),${row.count},${row.verified ? 'Yes' : 'No'}\n`;
+        const reason = row.reason ? `"${row.reason}"` : "";
+        csvContent += `${row.name},${levelName} (L${row.level}),${row.count},${row.verified ? 'Yes' : 'No'},${reason}\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -301,16 +307,33 @@ async function verifyRisksWithAI() {
         4: High Risk (Explicit)
         5: Critical (Severe/Malicious)
         
-        Return ONLY the number (1-5).`;
+        Also provide a very brief (max 10 words) reason.
+        Format: Level|Reason
+        Example: 5|Explicit adult content`;
 
         try {
             const result = await callGemini(prompt);
-            const newLevel = parseInt(result.trim());
+            // Expected format: "5|Explicit adult content"
+            const parts = result.trim().split('|');
 
-            if (!isNaN(newLevel)) {
-                domainObj.level = newLevel;
-                domainObj.verified = true;
+            if (parts.length >= 2) {
+                const newLevel = parseInt(parts[0].trim());
+                const reason = parts[1].trim();
+
+                if (!isNaN(newLevel)) {
+                    domainObj.level = newLevel;
+                    domainObj.reason = reason;
+                    domainObj.verified = true;
+                }
+            } else {
+                // Fallback if AI messes up format, try to just get number
+                const newLevel = parseInt(result.trim());
+                if (!isNaN(newLevel)) {
+                    domainObj.level = newLevel;
+                    domainObj.verified = true;
+                }
             }
+
         } catch (e) {
             console.error("Verification failed for", domainObj.name, e);
         }
