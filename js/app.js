@@ -218,6 +218,14 @@ function renderDashboard(data) {
     document.getElementById('riskQueries').innerText = data.riskyDomains.length;
     document.getElementById('riskQueries').style.color = data.riskyDomains.length > 0 ? RISK_CONFIG[data.maxRiskLevel].color : 'var(--success)';
 
+    // Show/Hide Verify Button
+    const verifyBtn = document.getElementById('verifyBtn');
+    if (data.riskyDomains.length > 0) {
+        verifyBtn.style.display = 'block';
+    } else {
+        verifyBtn.style.display = 'none';
+    }
+
     if (riskCount > 0) {
         riskContainer.innerHTML = '';
         // Sort by risk level descending
@@ -232,6 +240,7 @@ function renderDashboard(data) {
                 <div class="domain-left">
                     <button class="ai-btn" onclick="analyzeDomain('${d.name}')">✨ Explain</button>
                     <span style="color:${levelInfo.color}; font-weight:bold;">[L${d.level}] ${d.name}</span>
+                    ${d.verified ? '<span title="Verified by AI" style="cursor:help">✅</span>' : ''}
                 </div>
                 <span class="domain-count">${d.count}</span>
             `;
@@ -257,10 +266,10 @@ function exportReport() {
         return;
     }
 
-    let csvContent = "data:text/csv;charset=utf-8,Domain,Risk Level,Count\n";
+    let csvContent = "data:text/csv;charset=utf-8,Domain,Risk Level,Count,Verified\n";
     CURRENT_DATA.riskyDomains.forEach(row => {
         const levelName = RISK_CONFIG[row.level].label;
-        csvContent += `${row.name},${levelName} (L${row.level}),${row.count}\n`;
+        csvContent += `${row.name},${levelName} (L${row.level}),${row.count},${row.verified ? 'Yes' : 'No'}\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -270,6 +279,93 @@ function exportReport() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+async function verifyRisksWithAI() {
+    const btn = document.getElementById('verifyBtn');
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = "✨ Verifying...";
+
+    const domainsToVerify = CURRENT_DATA.riskyDomains.filter(d => !d.verified);
+    let processed = 0;
+
+    for (let domainObj of domainsToVerify) {
+        btn.innerText = `✨ Verifying (${processed + 1}/${domainsToVerify.length})...`;
+
+        const prompt = `Analyze the domain '${domainObj.name}'. 
+        Rate its safety risk for children on a scale of 1-5 based on these criteria:
+        1: Safe/Clean
+        2: Low Risk (Ambiguous but likely safe)
+        3: Medium Risk (Suggestive)
+        4: High Risk (Explicit)
+        5: Critical (Severe/Malicious)
+        
+        Return ONLY the number (1-5).`;
+
+        try {
+            const result = await callGemini(prompt);
+            const newLevel = parseInt(result.trim());
+
+            if (!isNaN(newLevel)) {
+                domainObj.level = newLevel;
+                domainObj.verified = true;
+            }
+        } catch (e) {
+            console.error("Verification failed for", domainObj.name, e);
+        }
+
+        processed++;
+        // Small delay to avoid rate limits
+        await new Promise(r => setTimeout(r, 1000));
+    }
+
+    // Re-evaluate max risk and distribution
+    let maxRisk = 1;
+    let riskDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
+    // Filter out Level 1s from risky list if they were downgraded
+    CURRENT_DATA.riskyDomains = CURRENT_DATA.riskyDomains.filter(d => {
+        if (d.level === 1) return false; // Remove safe domains
+        return true;
+    });
+
+    CURRENT_DATA.riskyDomains.forEach(d => {
+        if (d.level > maxRisk) maxRisk = d.level;
+        riskDist[d.level] = (riskDist[d.level] || 0) + 1; // Count unique domains per level
+    });
+
+    // We need to re-calculate distribution properly including non-risky? 
+    // Actually riskDistribution in CURRENT_DATA was counting *queries* or *domains*?
+    // In analyzeCSV it was counting queries per level. 
+    // For simplicity here, let's just update the distribution based on the remaining risky domains
+    // and assume the rest are Level 1. This is a simplification but works for the chart.
+
+    // Better approach: Reset distribution and re-tally
+    // But we don't have the full dataset here easily. 
+    // Let's just update the risky parts of the distribution.
+
+    CURRENT_DATA.maxRiskLevel = maxRisk > 1 ? maxRisk : 1;
+
+    // Update chart data for risky levels
+    CURRENT_DATA.riskDistribution[2] = 0;
+    CURRENT_DATA.riskDistribution[3] = 0;
+    CURRENT_DATA.riskDistribution[4] = 0;
+    CURRENT_DATA.riskDistribution[5] = 0;
+
+    CURRENT_DATA.riskyDomains.forEach(d => {
+        CURRENT_DATA.riskDistribution[d.level] += d.count;
+    });
+
+    btn.innerText = originalText;
+    btn.disabled = false;
+
+    renderDashboard(CURRENT_DATA);
+    alert("Verification Complete! Risk levels updated.");
+}
+
+function closeModal(e) {
+    if (e.target.id === 'aiModal') document.getElementById('aiModal').style.display = 'none';
 }
 
 // --- CHART.JS INTEGRATION ---

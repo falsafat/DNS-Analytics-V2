@@ -107,7 +107,11 @@
                     Safety Scanner Results
                     <span class="risk-badge risk-safe" id="globalRiskBadge">System Clean</span>
                 </div>
-                <button class="btn-secondary" onclick="exportReport()">📥 Export Report</button>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-secondary" onclick="verifyRisksWithAI()" id="verifyBtn" style="display:none;">✨
+                        Verify Risks with AI</button>
+                    <button class="btn-secondary" onclick="exportReport()">📥 Export Report</button>
+                </div>
             </div>
 
             <div class="filter-group">
