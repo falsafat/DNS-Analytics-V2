@@ -10,10 +10,22 @@ let CURRENT_DATA = {
 
 // 5-Level Risk Mapping
 const RISK_MAPPING = {
-    5: ["pornhub", "xvideos", "xnxx", "sharmuta", "burat", "kantot", "iyot"], // Critical
-    4: ["porn", "sex", "xxx", "fuck", "hentai", "bomba", "torjak", "jakol", "nik", "nekh", "jins"], // High
-    3: ["nude", "adult", "milf", "anal", "pussy", "dick", "cock", "titi", "etits", "pekpek", "jabol", "boldstar", "pokpok", "fubu", "ibahi", "kuss", "zebb", "siks"], // Medium
-    2: ["tube", "cam", "uncensored", "leaked", "amateur", "bold", "scandal", "pinay", "libog", "kayat"] // Low
+    5: [ // Critical: Major Sites & Severe
+        "pornhub", "xvideos", "xnxx", "chaturbate", "livejasmin", "brazzers", "redtube", "youporn",
+        "onlyfans", "nhentai", "sharmuta", "kantot", "iyot", "rape", "incest", "pedophile"
+    ],
+    4: [ // High: Explicit Acts
+        "porn", "sex", "xxx", "fuck", "gangbang", "creampie", "blowjob", "cum", "orgasm",
+        "bdsm", "fetish", "bondage", "bomba", "torjak", "jakol", "nik", "nekh", "jins", "ibahi"
+    ],
+    3: [ // Medium: Anatomy & Suggestive
+        "nude", "adult", "milf", "anal", "pussy", "dick", "cock", "boobs", "tits", "booty", "ass",
+        "escort", "strip", "erotic", "kink", "hentai", "titi", "etits", "pekpek", "jabol",
+        "boldstar", "pokpok", "fubu", "kuss", "zebb", "siks", "tiz"
+    ],
+    2: [ // Low: Ambiguous
+        "tube", "cam", "uncensored", "leaked", "amateur", "bold", "scandal", "pinay", "libog", "kayat", "viral", "dating"
+    ]
     // Level 1 is Safe (default)
 };
 
