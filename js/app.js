@@ -106,7 +106,7 @@ function loadApiKey() {
     }
 }
 
-async function callGemini(prompt) {
+async function callGemini(prompt, retries = 3) {
     const apiKey = document.getElementById('apiKeyInput').value;
     if (!apiKey) {
         alert("Please enter a valid Gemini API Key in the top right corner!");
@@ -116,15 +116,31 @@ async function callGemini(prompt) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
     const payload = { contents: [{ parts: [{ text: prompt }] }] };
 
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-    });
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    if (!response.ok) throw new Error("API Call Failed");
-    const data = await response.json();
-    return data.candidates[0].content.parts[0].text;
+        if (response.status === 429) {
+            if (retries > 0) {
+                console.warn("Rate limit hit (429). Pausing for 10s...");
+                // Update UI if possible, but for now just log
+                await new Promise(r => setTimeout(r, 10000));
+                return callGemini(prompt, retries - 1);
+            } else {
+                throw new Error("Rate Limit Exceeded (429) - Max retries reached");
+            }
+        }
+
+        if (!response.ok) throw new Error(`API Call Failed: ${response.status}`);
+        const data = await response.json();
+        return data.candidates[0].content.parts[0].text;
+    } catch (e) {
+        console.error("Gemini API Error:", e);
+        throw e;
+    }
 }
 
 async function analyzeDomain(domain) {
@@ -362,8 +378,8 @@ async function verifyRisksWithAI() {
         }
 
         processedCount += batch.length;
-        // Small delay to avoid rate limits
-        await new Promise(r => setTimeout(r, 1500));
+        // Delay 4s to strictly respect 15 RPM limit (60s / 15 = 4s)
+        await new Promise(r => setTimeout(r, 4000));
     }
 
     // Re-evaluate max risk and distribution
