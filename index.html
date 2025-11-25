@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parental Network Analysis Dashboard + AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="header">
+        <div>
+            <h1>Network Analytics <span
+                    style="font-size: 0.8rem; background: var(--accent); padding: 2px 6px; border-radius: 4px; color: white; margin-left: 10px;">+
+                    Gemini AI</span></h1>
+            <div class="subtitle">Analysis for Log File: 1bbd38.csv</div>
+        </div>
+
+        <div class="controls-group">
+            <div class="api-input-group">
+                <span class="api-status">🔑</span>
+                <input type="password" id="apiKeyInput" placeholder="Paste Gemini API Key Here" onchange="saveApiKey()"
+                    value="AIzaSyCeQVEZojHsHug1gugh_V6acZAoFINoZuE">
+            </div>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                🌗
+            </button>
+        </div>
+    </div>
+
+    <!-- Drag & Drop Zone -->
+    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <div>📂 <b>Drag & Drop</b> a new NextDNS CSV log here (or click to browse)</div>
+        <input type="file" id="fileInput" accept=".csv">
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+        <div class="kpi-card">
+            <div class="kpi-label">Total Queries</div>
+            <div class="kpi-value" id="totalQueries">0</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Blocked Trackers</div>
+            <div class="kpi-value" style="color: var(--danger)" id="blockedQueries">0</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Adult/Risk Flags</div>
+            <div class="kpi-value" style="color: var(--success)" id="riskQueries">0</div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <!-- Hourly Chart & AI Analysis -->
+        <div class="card full-width">
+            <div class="card-header">
+                Activity by Hour (Local Time: GMT+3)
+            </div>
+
+            <div class="chart-container">
+                <canvas id="hourlyChart"></canvas>
+            </div>
+
+            <button class="ai-report-btn" onclick="generateActivityReport()">
+                <span>✨ Generate AI Behavior Report</span>
+            </button>
+            <div id="aiActivityReport"
+                style="margin-top: 15px; display: none; padding: 15px; background: rgba(51, 154, 240, 0.1); border-left: 3px solid var(--accent); border-radius: 4px; color: var(--text-main);">
+                <!-- AI Text goes here -->
+            </div>
+        </div>
+
+        <!-- Top Domains with AI Inspector -->
+        <div class="card">
+            <div class="card-header">Top 50 Domains Visited</div>
+            <ul class="domain-list" id="topDomainsList">
+                <li style="text-align:center; padding: 20px; color: var(--text-muted);">Upload a CSV file to see data
+                </li>
+            </ul>
+        </div>
+
+        <!-- Safety Scanner -->
+        <div class="card">
+            <div class="card-header">
+                Safety Scanner Results
+                <span class="risk-badge risk-safe" id="globalRiskBadge">System Clean</span>
+            </div>
+            <div style="font-size: 0.9rem; margin-bottom: 15px; color: var(--text-muted);">
+                Scanning for adult/risk keywords including Filipino slang.
+            </div>
+            <div id="riskResults" class="domain-list">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- AI Modal -->
+    <div class="modal-overlay" id="aiModal" onclick="closeModal(event)">
+        <div class="modal">
+            <h2 id="modalTitle">✨ AI Analysis</h2>
+            <div id="modalContent" class="modal-content">Loading...</div>
+            <button class="modal-close" onclick="document.getElementById('aiModal').style.display='none'">Close</button>
+        </div>
+    </div>
+
+    <!-- External JS -->
+    <script src="js/app.js"></script>
+</body>
+
+</html>
