@@ -8,8 +8,15 @@ let CURRENT_DATA = {
 };
 
 const RISK_KEYWORDS = [
+    // Existing
     "porn", "sex", "xxx", "tube", "hentai", "nude", "adult", "xvideos", "pornhub",
-    "pinay", "kantot", "iyot", "libog", "bomba", "kayat", "bold", "scandal", "torjak", "jakol"
+    "pinay", "kantot", "iyot", "libog", "bomba", "kayat", "bold", "scandal", "torjak", "jakol",
+    // New English
+    "cam", "uncensored", "leaked", "fuck", "pussy", "dick", "cock", "amateur", "milf", "anal",
+    // New Tagalog
+    "pekpek", "titi", "burat", "etits", "jabol", "boldstar", "pokpok", "alsapwersa", "fubu",
+    // New Arabic
+    "jins", "ibahi", "nik", "nekh", "kuss", "zebb", "sharmuta", "siks", "xnxx"
 ];
 
 let hourlyChart = null; // Chart.js instance
@@ -332,7 +339,7 @@ function analyzeCSV(rows) {
         } catch (e) { }
 
         for (let keyword of RISK_KEYWORDS) {
-            if (domain.includes(keyword)) {
+            if (domain.includes(keyword) && !domain.includes('youtube')) {
                 risky.push({ name: domain, count: 1 });
                 break;
             }
