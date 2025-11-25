@@ -4,20 +4,26 @@ let CURRENT_DATA = {
     blocked: 0,
     hourly: new Array(24).fill(0),
     topDomains: [],
-    riskyDomains: []
+    riskyDomains: [],
+    maxRiskLevel: 1
 };
 
-const RISK_KEYWORDS = [
-    // Existing
-    "porn", "sex", "xxx", "tube", "hentai", "nude", "adult", "xvideos", "pornhub",
-    "pinay", "kantot", "iyot", "libog", "bomba", "kayat", "bold", "scandal", "torjak", "jakol",
-    // New English
-    "cam", "uncensored", "leaked", "fuck", "pussy", "dick", "cock", "amateur", "milf", "anal",
-    // New Tagalog
-    "pekpek", "titi", "burat", "etits", "jabol", "boldstar", "pokpok", "alsapwersa", "fubu",
-    // New Arabic
-    "jins", "ibahi", "nik", "nekh", "kuss", "zebb", "sharmuta", "siks", "xnxx"
-];
+// 5-Level Risk Mapping
+const RISK_MAPPING = {
+    5: ["pornhub", "xvideos", "xnxx", "sharmuta", "burat", "kantot", "iyot"], // Critical
+    4: ["porn", "sex", "xxx", "fuck", "hentai", "bomba", "torjak", "jakol", "nik", "nekh", "jins"], // High
+    3: ["nude", "adult", "milf", "anal", "pussy", "dick", "cock", "titi", "etits", "pekpek", "jabol", "boldstar", "pokpok", "fubu", "ibahi", "kuss", "zebb", "siks"], // Medium
+    2: ["tube", "cam", "uncensored", "leaked", "amateur", "bold", "scandal", "pinay", "libog", "kayat"] // Low
+    // Level 1 is Safe (default)
+};
+
+const RISK_CONFIG = {
+    1: { label: "System Clean", color: "var(--success)", class: "risk-safe" },
+    2: { label: "Low Risk Found", color: "#4dabf7", class: "risk-low" },
+    3: { label: "Medium Risk Found", color: "#fcc419", class: "risk-medium" },
+    4: { label: "High Risk Found", color: "#ff922b", class: "risk-high" },
+    5: { label: "CRITICAL RISK", color: "var(--danger)", class: "risk-critical" }
+};
 
 let hourlyChart = null; // Chart.js instance
 
@@ -166,31 +172,39 @@ function renderDashboard(data) {
     const riskContainer = document.getElementById('riskResults');
     const globalBadge = document.getElementById('globalRiskBadge');
 
-    if (data.riskyDomains.length > 0) {
-        globalBadge.className = 'risk-badge risk-danger';
-        globalBadge.innerText = `RISK FOUND (${data.riskyDomains.length})`;
-        document.getElementById('riskQueries').innerText = data.riskyDomains.length;
-        document.getElementById('riskQueries').style.color = 'var(--danger)';
+    const riskInfo = RISK_CONFIG[data.maxRiskLevel];
+    globalBadge.className = `risk-badge ${riskInfo.class}`;
+    globalBadge.style.backgroundColor = riskInfo.color; // Ensure color is applied if class isn't enough
+    globalBadge.style.color = data.maxRiskLevel >= 3 ? '#000' : '#fff'; // Contrast text
+    if (data.maxRiskLevel === 1) globalBadge.style.color = '#fff'; // Safe is green/white
 
+    globalBadge.innerText = riskInfo.label;
+
+    const riskCount = data.riskyDomains.length;
+    document.getElementById('riskQueries').innerText = riskCount;
+    document.getElementById('riskQueries').style.color = riskCount > 0 ? RISK_CONFIG[data.maxRiskLevel].color : 'var(--success)';
+
+    if (riskCount > 0) {
         riskContainer.innerHTML = '';
+        // Sort by risk level descending
+        data.riskyDomains.sort((a, b) => b.level - a.level);
+
         data.riskyDomains.forEach(d => {
             const div = document.createElement('div');
             div.className = 'domain-item';
+            const levelInfo = RISK_CONFIG[d.level];
+
             div.innerHTML = `
                 <div class="domain-left">
                     <button class="ai-btn" onclick="analyzeDomain('${d.name}')">✨ Explain</button>
-                    <span style="color:var(--danger)">⚠️ ${d.name}</span>
+                    <span style="color:${levelInfo.color}; font-weight:bold;">[L${d.level}] ${d.name}</span>
                 </div>
                 <span class="domain-count">${d.count}</span>
             `;
             riskContainer.appendChild(div);
         });
     } else {
-        globalBadge.className = 'risk-badge risk-safe';
-        globalBadge.innerText = 'System Clean';
-        document.getElementById('riskQueries').innerText = "0";
-        document.getElementById('riskQueries').style.color = 'var(--success)';
-        riskContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">✅ No explicit adult domains found.<br><small>Scanner checked against ${RISK_KEYWORDS.length} keywords.</small></div>`;
+        riskContainer.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding:20px;">✅ No explicit adult domains found.<br><small>System Clean (Level 1)</small></div>`;
     }
 }
 
@@ -314,6 +328,7 @@ function analyzeCSV(rows) {
     let domainCounts = {};
     let hourly = new Array(24).fill(0);
     let risky = [];
+    let maxRisk = 1;
 
     for (let i = 1; i < rows.length; i++) {
         const cols = rows[i].split(',');
@@ -338,17 +353,53 @@ function analyzeCSV(rows) {
             }
         } catch (e) { }
 
-        for (let keyword of RISK_KEYWORDS) {
-            if (domain.includes(keyword) && !domain.includes('youtube')) {
-                risky.push({ name: domain, count: 1 });
-                break;
+        // Risk Analysis
+        let domainRiskLevel = 1;
+
+        // Check Critical (5)
+        for (let kw of RISK_MAPPING[5]) {
+            if (domain.includes(kw)) { domainRiskLevel = 5; break; }
+        }
+        // Check High (4) if not found
+        if (domainRiskLevel === 1) {
+            for (let kw of RISK_MAPPING[4]) {
+                if (domain.includes(kw)) { domainRiskLevel = 4; break; }
             }
+        }
+        // Check Medium (3)
+        if (domainRiskLevel === 1) {
+            for (let kw of RISK_MAPPING[3]) {
+                if (domain.includes(kw)) { domainRiskLevel = 3; break; }
+            }
+        }
+        // Check Low (2)
+        if (domainRiskLevel === 1) {
+            for (let kw of RISK_MAPPING[2]) {
+                if (domain.includes(kw) && !domain.includes('youtube')) { // Keep YouTube exception
+                    domainRiskLevel = 2; break;
+                }
+            }
+        }
+
+        if (domainRiskLevel > 1) {
+            risky.push({ name: domain, count: 1, level: domainRiskLevel });
+            if (domainRiskLevel > maxRisk) maxRisk = domainRiskLevel;
         }
     }
 
     const riskyCounts = {};
-    risky.forEach(r => riskyCounts[r.name] = (riskyCounts[r.name] || 0) + 1);
-    const riskyFinal = Object.keys(riskyCounts).map(k => ({ name: k, count: riskyCounts[k] }));
+    risky.forEach(r => {
+        if (!riskyCounts[r.name]) {
+            riskyCounts[r.name] = { count: 0, level: r.level };
+        }
+        riskyCounts[r.name].count++;
+    });
+
+    const riskyFinal = Object.keys(riskyCounts).map(k => ({
+        name: k,
+        count: riskyCounts[k].count,
+        level: riskyCounts[k].level
+    }));
 
     const sortedDomains = Object.keys(domainCounts)
         .map(key => ({ name: key, count: domainCounts[key] }))
@@ -360,7 +411,8 @@ function analyzeCSV(rows) {
         blocked: blocked,
         hourly: hourly,
         topDomains: sortedDomains,
-        riskyDomains: riskyFinal
+        riskyDomains: riskyFinal,
+        maxRiskLevel: maxRisk
     };
 
     renderDashboard(CURRENT_DATA);
