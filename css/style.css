@@ -599,3 +599,64 @@ input[type="file"] {
     height: 350px;
     width: 100%;
 }
+
+/* --- Mobile Optimization --- */
+@media (max-width: 768px) {
+    body {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.4rem;
+    }
+
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .controls-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .api-input-group {
+        flex: 1;
+    }
+
+    .api-input-group input {
+        width: 100%;
+        min-width: 0;
+        /* Allow shrinking */
+    }
+
+    .kpi-row {
+        grid-template-columns: 1fr;
+        /* Stack KPIs on mobile */
+    }
+
+    .card-header {
+        font-size: 1rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .card-header>div:first-child {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .card-header>div:last-child {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .chart-container {
+        height: 250px;
+        /* Smaller charts on mobile */
+    }
+}
