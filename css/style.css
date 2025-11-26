@@ -148,6 +148,44 @@ h1 {
     transform: translateY(-1px);
 }
 
+/* --- Filter Toolbar --- */
+.filter-toolbar {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    background: var(--bg-card);
+    padding: 15px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.filter-select {
+    background: var(--bg-input);
+    color: var(--text-header);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    min-width: 150px;
+}
+
+.filter-select:focus {
+    border-color: var(--accent);
+}
+
 /* --- File Upload --- */
 .upload-zone {
     border: 2px dashed var(--border-color);
