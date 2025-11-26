@@ -25,17 +25,18 @@
             <h1>Network Analytics <span
                     style="font-size: 0.8rem; background: var(--accent); padding: 2px 6px; border-radius: 4px; color: white; margin-left: 10px;">+
                     Gemini AI</span></h1>
-            <div class="subtitle">Analysis for Log File: 1bbd38.csv</div>
+            <div class="subtitle" id="fileSubtitle">Waiting for file upload...</div>
         </div>
 
         <div class="controls-group">
-            <div class="api-input-group">
-                <span class="api-status">🔑</span>
-                <input type="password" id="apiKeyInput" placeholder="Paste Gemini API Key Here" onchange="saveApiKey()">
-            </div>
             <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
                 🌗
             </button>
+            <div class="api-input-group">
+                <span class="api-status">🔑</span>
+                <input type="password" id="apiKeyInput" placeholder="Paste Gemini API Key Here">
+                <button class="btn-save" onclick="saveApiKeyUI()" id="saveKeyBtn">Save</button>
+            </div>
         </div>
     </div>
 
@@ -56,7 +57,7 @@
             <div class="kpi-value" style="color: var(--danger)" id="blockedQueries">0</div>
         </div>
         <div class="kpi-card">
-            <div class="kpi-label">Adult/Risk Flags</div>
+            <div class="kpi-label">Risk Flags</div>
             <div class="kpi-value" style="color: var(--success)" id="riskQueries">0</div>
         </div>
     </div>
@@ -71,6 +72,9 @@
 
             <div class="chart-container">
                 <canvas id="hourlyChart"></canvas>
+                <div id="hourlyNoData" class="no-data-overlay">
+                    <span>📊 Waiting for data...</span>
+                </div>
             </div>
 
             <button class="ai-report-btn" onclick="generateActivityReport()">
@@ -87,6 +91,9 @@
             <div class="card-header">Risk Distribution</div>
             <div class="chart-container" style="height: 250px;">
                 <canvas id="riskChart"></canvas>
+                <div id="riskNoData" class="no-data-overlay">
+                    <span>🛡️ Waiting for data...</span>
+                </div>
             </div>
         </div>
 
@@ -129,6 +136,13 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>🔒 <strong>Privacy First:</strong> Your data is processed locally in your browser. No logs are uploaded to
+            any server.</p>
+        <p>Built with ❤️ for Parental Safety.</p>
     </div>
 
     <!-- AI Modal -->

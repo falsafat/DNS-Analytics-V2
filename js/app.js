@@ -94,6 +94,19 @@ function openHelp() {
 }
 
 // --- GEMINI AI INTEGRATION ---
+function saveApiKeyUI() {
+    saveApiKey();
+    const btn = document.getElementById('saveKeyBtn');
+    const originalText = btn.innerText;
+    btn.innerText = "Saved!";
+    btn.style.background = "var(--success)";
+
+    setTimeout(() => {
+        btn.innerText = originalText;
+        btn.style.background = "var(--accent)";
+    }, 2000);
+}
+
 function saveApiKey() {
     const key = document.getElementById('apiKeyInput').value;
     localStorage.setItem('gemini_api_key', key);
@@ -199,6 +212,12 @@ async function generateActivityReport() {
 function renderDashboard(data) {
     document.getElementById('totalQueries').innerText = data.total.toLocaleString();
     document.getElementById('blockedQueries').innerText = data.blocked.toLocaleString();
+
+    // Hide No Data Overlays
+    if (data.total > 0) {
+        document.getElementById('hourlyNoData').style.display = 'none';
+        document.getElementById('riskNoData').style.display = 'none';
+    }
 
     updateChartData(data.hourly);
     updateRiskChartData(data.riskDistribution);
@@ -490,7 +509,7 @@ function initRiskChart() {
     riskChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Safe', 'Low', 'Medium', 'High', 'Critical'],
+            labels: ['Safe', 'Suspicious', 'Suggestive', 'Mature', 'Explicit'],
             datasets: [{
                 data: [100, 0, 0, 0, 0], // Default
                 backgroundColor: [
@@ -588,6 +607,10 @@ function setupFileUpload() {
 
 function processFile(file) {
     if (!file) return;
+
+    // Update Subtitle
+    document.getElementById('fileSubtitle').innerText = `Analysis for Log File: ${file.name}`;
+
     const reader = new FileReader();
     reader.onload = function (e) {
         const text = e.target.result;
