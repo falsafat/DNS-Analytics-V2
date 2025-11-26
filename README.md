@@ -37,7 +37,8 @@ A powerful, privacy-focused dashboard for parents to analyze network traffic log
 2.  **Open the Dashboard**:
     *   Simply open `index.html` in any modern web browser.
 3.  **Enter API Key**:
-    *   Paste your Gemini API Key in the input field at the top right. It will be saved locally in your browser.
+    *   Paste your Gemini API Key in the input field at the top right.
+    *   **Note**: It will be saved locally in your browser, so you only need to do this once.
 4.  **Upload Data**:
     *   Drag and drop your DNS query CSV file (Format: `Domain, Timestamp` or similar standard logs).
 5.  **Analyze**:

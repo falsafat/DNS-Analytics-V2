@@ -31,8 +31,7 @@
         <div class="controls-group">
             <div class="api-input-group">
                 <span class="api-status">🔑</span>
-                <input type="password" id="apiKeyInput" placeholder="Paste Gemini API Key Here" onchange="saveApiKey()"
-                    value="AIzaSyCeQVEZojHsHug1gugh_V6acZAoFINoZuE">
+                <input type="password" id="apiKeyInput" placeholder="Paste Gemini API Key Here" onchange="saveApiKey()">
             </div>
             <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
                 🌗
@@ -158,13 +157,17 @@
                 <h4>⚠️ Risk Level Definitions</h4>
                 <ul class="risk-legend">
                     <li><span class="badge" style="background:#ff6b6b; color:white">Level 5: Explicit Adult</span>
-                        <strong>BLOCK</strong> - Known porn sites, severe content.</li>
+                        <strong>BLOCK</strong> - Known porn sites, severe content.
+                    </li>
                     <li><span class="badge" style="background:#ff922b; color:white">Level 4: Mature & Gambling</span>
-                        <strong>RESTRICT</strong> - Dating, gambling, drugs, explicit acts.</li>
+                        <strong>RESTRICT</strong> - Dating, gambling, drugs, explicit acts.
+                    </li>
                     <li><span class="badge" style="background:#fcc419; color:black">Level 3: Suggestive</span>
-                        <strong>MONITOR</strong> - Slang, anatomy, hidden meanings.</li>
+                        <strong>MONITOR</strong> - Slang, anatomy, hidden meanings.
+                    </li>
                     <li><span class="badge" style="background:#4dabf7; color:white">Level 2: Suspicious</span>
-                        <strong>VERIFY</strong> - Ambiguous terms (e.g., "tube", "vpn").</li>
+                        <strong>VERIFY</strong> - Ambiguous terms (e.g., "tube", "vpn").
+                    </li>
                     <li><span class="badge" style="background:#51cf66; color:white">Level 1: Safe</span> System clean.
                     </li>
                 </ul>
