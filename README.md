@@ -45,6 +45,39 @@ A powerful, privacy-focused dashboard for parents to analyze network traffic log
     *   Click **"✨ Verify Risks with AI"** to double-check flagged domains.
     *   Click **"✨ Generate Activity Report"** for a summary of habits.
 
+## 📦 Installation on CasaOS
+
+This dashboard runs as a simple static website using a lightweight Nginx container.
+
+**Step 1: Prepare the Files**
+1.  Download the project source code.
+2.  Open your CasaOS **Files** app.
+3.  Create a new folder at: `/DATA/AppData/network-dashboard`
+4.  Upload **all project files** (`index.html`, `css/` folder, `js/` folder) into this new folder.
+
+**Step 2: Install via CasaOS**
+1.  Go to the CasaOS dashboard and click the **+ (Plus)** button > **Install a Custom App**.
+2.  Fill in the settings exactly as follows:
+
+| Setting | Value |
+| :--- | :--- |
+| **Docker Image** | `nginx:alpine` |
+| **Title** | Network Dashboard |
+| **Web UI Port** | `3000` |
+
+**Step 3: Configure Ports (Critical)**
+Under the **Ports** section, ensure the mapping is correct to avoid conflicts:
+*   **Host Port**: `3000` (or any free port you prefer)
+*   **Container Port**: `80` (Must be 80)
+
+**Step 4: Configure Volumes**
+Under the **Volumes** section, link your file folder to the web server:
+*   **Host Path**: `/DATA/AppData/network-dashboard` (Select the folder you created in Step 1)
+*   **Container Path**: `/usr/share/nginx/html`
+
+**Step 5: Finish**
+Click **Install**. Once complete, open the app icon or visit `http://YOUR-IP:3000`.
+
 ## 🔒 Privacy Note
 
 *   **Local-First**: Your full browsing history CSV is processed entirely within your browser using JavaScript. It is NOT uploaded to any backend server.
