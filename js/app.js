@@ -153,47 +153,75 @@ function processFilteredData() {
 
 function processFile(file) {
     if (!file) return;
-    document.getElementById('fileSubtitle').innerText = `Analysis for Log File: ${file.name}`;
+    const subtitle = document.getElementById('fileSubtitle');
+    subtitle.innerText = "📂 Reading file...";
+
     const reader = new FileReader();
     reader.onload = function (e) {
-        const text = e.target.result;
-        const rows = text.split('\n');
-        parseCSV(rows);
+        subtitle.innerText = "⚙️ Parsing CSV...";
+        // Use setTimeout to allow UI to update before blocking operation
+        setTimeout(() => {
+            const text = e.target.result;
+            const rows = text.split('\n');
+            parseCSV(rows, file.name);
+        }, 50);
     };
     reader.readAsText(file);
 }
 
-function parseCSV(rows) {
+function parseCSV(rows, fileName) {
+    document.getElementById('fileSubtitle').innerText = "📊 Analyzing data...";
     RAW_DATA = [];
     const devices = new Set();
 
     if (rows.length < 2) return;
 
-    // 1. Parse Header to find indices
-    const header = rows[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase());
+    // Helper: Robust CSV Line Parser (handles quotes)
+    const parseLine = (text) => {
+        const result = [];
+        let cell = '';
+        let inQuotes = false;
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            if (char === '"') {
+                inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+                result.push(cell.trim());
+                cell = '';
+            } else {
+                cell += char;
+            }
+        }
+        result.push(cell.trim());
+        return result;
+    };
+
+    // 1. Parse Header
+    const headerLine = rows[0];
+    const header = parseLine(headerLine).map(h => h.replace(/"/g, '').toLowerCase());
 
     const idx = {
-        timestamp: header.indexOf('timestamp'),
-        domain: header.indexOf('domain'),
-        status: header.indexOf('status'),
-        deviceId: header.indexOf('device_id'),
-        deviceName: header.indexOf('device_name')
+        timestamp: header.findIndex(h => h.includes('timestamp') || h.includes('date')),
+        domain: header.findIndex(h => h === 'domain' || h === 'query'),
+        status: header.findIndex(h => h === 'status'),
+        deviceId: header.findIndex(h => h === 'device_id' || h === 'device id'),
+        deviceName: header.findIndex(h => h === 'device_name' || h === 'device name' || h === 'device')
     };
 
     console.log("CSV Header:", header);
     console.log("Column Indices:", idx);
 
-    // Fallback for critical fields if not found (though they should be there)
     if (idx.timestamp === -1 || idx.domain === -1) {
-        console.error("Critical columns missing in CSV");
-        alert("Error: Invalid CSV format. Missing 'timestamp' or 'domain' columns.");
+        alert("Error: CSV missing 'timestamp' or 'domain' columns.");
         return;
     }
 
     // 2. Parse Rows
     for (let i = 1; i < rows.length; i++) {
-        const cols = rows[i].split(',');
-        if (cols.length < 2) continue;
+        const line = rows[i].trim();
+        if (!line) continue;
+
+        const cols = parseLine(line);
 
         // Helper to safely get value
         const getVal = (index) => (index !== -1 && cols[index]) ? cols[index].replace(/"/g, '').trim() : '';
@@ -216,8 +244,20 @@ function parseCSV(rows) {
                     device_name: deviceName
                 });
 
-                if (deviceName) devices.add(deviceName);
-                else if (deviceId) devices.add(deviceId);
+                // Heuristic: If deviceName looks like a domain (has dot, no spaces) and matches the domain column, ignore it
+                // Also ignore if it's exactly the same as the domain
+                let validDevice = deviceName;
+                if (!validDevice && deviceId) validDevice = deviceId;
+
+                if (validDevice) {
+                    // Check if it looks like a domain (simple check)
+                    // Most devices don't have TLDs like .com, .net, .org
+                    // But some might be "host.local".
+                    // If it equals the domain field, it's definitely wrong (unless the device IS the domain, which is weird)
+                    if (validDevice !== domain) {
+                        devices.add(validDevice);
+                    }
+                }
             }
         } catch (e) { }
     }
@@ -225,12 +265,22 @@ function parseCSV(rows) {
     // Update Device Dropdown
     const deviceSelect = document.getElementById('deviceFilter');
     deviceSelect.innerHTML = '<option value="all">All Devices</option>';
-    devices.forEach(d => {
+
+    // Sort devices alphabetically
+    const sortedDevices = Array.from(devices).sort();
+
+    sortedDevices.forEach(d => {
         const option = document.createElement('option');
         option.value = d;
         option.innerText = d;
         deviceSelect.appendChild(option);
     });
+
+    console.log(`Parsed ${RAW_DATA.length} rows. Found ${devices.size} devices.`);
+
+    if (fileName) {
+        document.getElementById('fileSubtitle').innerText = `✅ Analysis for Log File: ${fileName}`;
+    }
 
     // Initial Processing
     processFilteredData();
