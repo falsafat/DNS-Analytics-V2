@@ -621,6 +621,7 @@ async function verifyRisksWithAI() {
 
         } catch (e) {
             console.error("Batch verification failed", e);
+            alert(`Batch verification failed: ${e.message}`);
         }
 
         processedCount += batch.length;
@@ -830,6 +831,64 @@ async function callGemini(prompt) {
     return data.candidates[0].content.parts[0].text;
 }
 
+async function generateActivityReport() {
+    const btn = document.querySelector('.ai-report-btn');
+    const reportDiv = document.getElementById('aiActivityReport');
+
+    if (!btn || !reportDiv) return;
+
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span>✨ Generating...</span>';
+    btn.disabled = true;
+    reportDiv.style.display = 'block';
+    reportDiv.innerHTML = '<div class="loading-spinner"></div> Analyzing network patterns...';
+
+    // Prepare data summary
+    const topDomains = CURRENT_DATA.topDomains.slice(0, 10).map(d => d.name).join(', ');
+    const riskSummary = Object.entries(CURRENT_DATA.riskDistribution)
+        .filter(([level, count]) => count > 0)
+        .map(([level, count]) => `${RISK_CONFIG[level].label}: ${count}`)
+        .join(', ');
+
+    // Find peak hour
+    let maxHour = 0;
+    let maxCount = 0;
+    CURRENT_DATA.hourly.forEach((count, hour) => {
+        if (count > maxCount) {
+            maxCount = count;
+            maxHour = hour;
+        }
+    });
+
+    const prompt = `You are a helpful AI assistant for a parental control dashboard.
+    Analyze this DNS traffic summary:
+    - Total Queries: ${CURRENT_DATA.total}
+    - Blocked Queries: ${CURRENT_DATA.blocked}
+    - Top Domains: ${topDomains}
+    - Risk Distribution: ${riskSummary}
+    - Peak Activity Hour: ${maxHour}:00
+
+    Generate a concise behavioral report (max 3-4 sentences) for the parent. 
+    Highlight any concerning habits or confirm if usage looks normal.
+    Use a friendly but professional tone.
+    Format the output as a simple HTML fragment (e.g. <p>...</p>). 
+    Do NOT use <html>, <body> tags or markdown code blocks.
+    Use <strong> for emphasis.`;
+
+    try {
+        let result = await callGemini(prompt);
+        // Clean up markdown if present
+        result = result.replace(/```html/g, '').replace(/```/g, '').trim();
+
+        reportDiv.innerHTML = `<strong>🤖 AI Insight:</strong><br>${result}`;
+    } catch (e) {
+        reportDiv.innerHTML = `<span style="color:red">Error generating report: ${e.message}</span>`;
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
 async function analyzeDomain(domain) {
     const modal = document.getElementById('aiModal');
     const content = document.getElementById('aiResponse');
@@ -838,7 +897,8 @@ async function analyzeDomain(domain) {
 
     const prompt = `Explain what the website "${domain}" is. Is it safe for children? 
     If it is risky, explain why briefly.
-    Format your answer in simple HTML (no markdown code blocks).`;
+    Format your answer as a simple HTML fragment (e.g. <p>...</p>). 
+    Do NOT use <html>, <body> tags or markdown code blocks.`;
 
     try {
         let result = await callGemini(prompt);
