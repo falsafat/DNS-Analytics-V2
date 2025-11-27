@@ -4,7 +4,8 @@ let ACTIVE_FILTERS = {
     time: 'all', // 'all', 'custom', or hours (e.g. 12, 24)
     dateRange: [], // [start, end] for custom range
     device: 'all',
-    risk: 'all'
+    risk: 'all',
+    timezoneOffset: 0 // UTC offset in hours
 };
 
 let CURRENT_DATA = {
@@ -75,11 +76,47 @@ document.addEventListener('DOMContentLoaded', () => {
     loadTheme();
     setupFileUpload();
     setupDatePicker();
+    initTimezone(); // Initialize timezone
 
     // Initialize charts
     initChart();
     initRiskChart();
+
+    // DEV: Auto-load sample data
+    loadSampleData();
 });
+
+function loadSampleData() {
+    console.log("Attempting to load sample data...");
+    const subtitle = document.getElementById('fileSubtitle');
+    subtitle.innerText = "🔄 Fetching sample data...";
+
+    fetch('sample_dns_logs.csv')
+        .then(response => {
+            if (!response.ok) throw new Error(`Failed to load sample data: ${response.status} ${response.statusText} `);
+            return response.text();
+        })
+        .then(text => {
+            console.log("Sample data fetched successfully. Length:", text.length);
+            subtitle.innerText = "⚙️ Parsing sample data...";
+            setTimeout(() => {
+                try {
+                    const rows = text.split('\n');
+                    parseCSV(rows, "sample_dns_logs.csv");
+                    initTimezone(); // Ensure timezone dropdown is populated
+                    console.log("Sample data parsed and loaded.");
+                } catch (e) {
+                    console.error("Error parsing sample data:", e);
+                    subtitle.innerText = "❌ Error parsing data";
+                }
+            }, 50);
+        })
+        .catch(err => {
+            console.error("Error loading sample data:", err);
+            subtitle.innerText = "❌ Error loading sample data";
+            alert("Could not load sample data. Make sure 'sample_dns_logs.csv' is in the root folder.");
+        });
+}
 
 function setupDatePicker() {
     datePicker = flatpickr("#dateRangePicker", {
@@ -96,6 +133,37 @@ function setupDatePicker() {
             }
         }
     });
+}
+
+function initTimezone() {
+    const select = document.getElementById('timezoneSelect');
+    select.innerHTML = '';
+
+    // Generate UTC offsets from -12 to +14
+    for (let i = -12; i <= 14; i++) {
+        const option = document.createElement('option');
+        const sign = i >= 0 ? '+' : '';
+        option.value = i;
+        option.innerText = `UTC${sign}${i} `;
+        select.appendChild(option);
+    }
+
+    // Detect browser timezone
+    const offset = -new Date().getTimezoneOffset() / 60;
+    select.value = offset;
+    ACTIVE_FILTERS.timezoneOffset = offset;
+    console.log("Detected Timezone Offset:", offset);
+}
+
+function updateTimezone() {
+    const select = document.getElementById('timezoneSelect');
+    ACTIVE_FILTERS.timezoneOffset = parseInt(select.value);
+    console.log("Timezone changed to:", ACTIVE_FILTERS.timezoneOffset);
+
+    // Re-analyze data with new timezone
+    if (RAW_DATA.length > 0) {
+        processFilteredData();
+    }
 }
 
 function setTimePreset(hours) {
@@ -276,10 +344,10 @@ function parseCSV(rows, fileName) {
         deviceSelect.appendChild(option);
     });
 
-    console.log(`Parsed ${RAW_DATA.length} rows. Found ${devices.size} devices.`);
+    console.log(`Parsed ${RAW_DATA.length} rows.Found ${devices.size} devices.`);
 
     if (fileName) {
-        document.getElementById('fileSubtitle').innerText = `✅ Analysis for Log File: ${fileName}`;
+        document.getElementById('fileSubtitle').innerText = `✅ Analysis for Log File: ${fileName} `;
     }
 
     // Initial Processing
@@ -302,15 +370,20 @@ function analyzeData(rows) {
         const rootDomain = row.domain.split('.').slice(-2).join('.');
         domainCounts[rootDomain] = (domainCounts[rootDomain] || 0) + 1;
 
-        let hour = row.date.getHours() + 3; // +3 Timezone offset (Keep consistent with previous logic)
-        if (hour >= 24) hour -= 24;
+        // Timezone Adjustment
+        // getUTCHours returns 0-23. Add offset.
+        let hour = row.date.getUTCHours() + ACTIVE_FILTERS.timezoneOffset;
+
+        // Handle overflow/underflow
+        if (hour >= 24) hour = hour % 24;
+        if (hour < 0) hour = 24 + (hour % 24);
+
         hourly[hour]++;
 
         // Risk Analysis (Same logic as before)
         let domainRiskLevel = 1;
         const domain = row.domain;
 
-        // ... (Risk checking logic - copy from previous analyzeCSV) ...
         // Check Critical (5)
         for (let kw of RISK_MAPPING[5]) { if (domain.includes(kw)) { domainRiskLevel = 5; break; } }
         // Check High (4)
@@ -328,7 +401,6 @@ function analyzeData(rows) {
         }
     });
 
-    // ... (Aggregation of risky domains and top domains - copy from previous analyzeCSV) ...
     const riskyCounts = {};
     risky.forEach(r => {
         if (!riskyCounts[r.name]) {
@@ -366,6 +438,11 @@ function analyzeData(rows) {
 function renderDashboard(data) {
     document.getElementById('totalQueries').innerText = data.total.toLocaleString();
     document.getElementById('blockedQueries').innerText = data.blocked.toLocaleString();
+
+    // Update Chart Title with Timezone
+    const sign = ACTIVE_FILTERS.timezoneOffset >= 0 ? '+' : '';
+    const tzLabel = `UTC${sign}${ACTIVE_FILTERS.timezoneOffset} `;
+    document.querySelector('.card-header').innerText = `Activity by Hour(${tzLabel})`;
 
     // Hide No Data Overlays
     if (data.total > 0) {

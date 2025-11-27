@@ -6,7 +6,7 @@
     --text-main: #c1c2c5;
     --text-header: #ffffff;
     --text-muted: #909296;
-    --border-color: rgba(255, 255, 255, 0.1);
+    --border-color: rgba(255, 255, 255, 0.08);
 
     --accent: #339af0;
     --accent-hover: #228be6;
@@ -29,13 +29,13 @@
 
 [data-theme="light"] {
     --bg-body: #f0f2f5;
-    --bg-card: rgba(255, 255, 255, 0.8);
-    --bg-input: rgba(233, 236, 239, 0.5);
+    --bg-card: rgba(255, 255, 255, 0.9);
+    --bg-input: rgba(233, 236, 239, 0.6);
     --text-main: #495057;
     --text-header: #212529;
     --text-muted: #868e96;
-    --border-color: rgba(0, 0, 0, 0.05);
-    --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+    --border-color: rgba(0, 0, 0, 0.06);
+    --card-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
 }
 
 * {
@@ -45,13 +45,15 @@
 
 body {
     background-color: var(--bg-body);
-    background-image: radial-gradient(circle at 10% 20%, rgba(51, 154, 240, 0.05) 0%, transparent 20%),
-        radial-gradient(circle at 90% 80%, rgba(255, 107, 107, 0.05) 0%, transparent 20%);
+    background-image:
+        radial-gradient(circle at 15% 50%, rgba(51, 154, 240, 0.08) 0%, transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(255, 107, 107, 0.08) 0%, transparent 25%);
     color: var(--text-main);
     margin: 0;
     padding: 20px;
     min-height: 100vh;
-    transition: background-color 0.3s, color 0.3s;
+    line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* --- Header & Controls --- */
@@ -189,22 +191,25 @@ h1 {
 /* --- File Upload --- */
 .upload-zone {
     border: 2px dashed var(--border-color);
-    padding: 40px;
+    padding: 50px;
     text-align: center;
     border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     background: var(--bg-card);
     margin-bottom: 30px;
     color: var(--text-muted);
     backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
 }
 
 .upload-zone:hover {
     border-color: var(--accent);
-    background: rgba(51, 154, 240, 0.05);
+    background: rgba(51, 154, 240, 0.08);
     color: var(--text-header);
     transform: scale(1.01);
+    box-shadow: 0 4px 20px rgba(51, 154, 240, 0.1);
 }
 
 input[type="file"] {
@@ -293,19 +298,19 @@ input[type="file"] {
 
 .card {
     background-color: var(--bg-card);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
     border-radius: var(--radius-md);
     padding: 25px;
     box-shadow: var(--card-shadow);
     border: 1px solid var(--border-color);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
-    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    border-color: rgba(51, 154, 240, 0.3);
 }
 
 .card-header {
@@ -465,16 +470,23 @@ input[type="file"] {
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     color: var(--text-header);
-    padding: 6px 12px;
+    padding: 8px 16px;
     border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 0.9rem;
-    transition: all 0.2s;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
 .btn-secondary:hover {
     border-color: var(--accent);
     color: var(--accent);
+    background: rgba(51, 154, 240, 0.05);
+    transform: translateY(-1px);
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
 }
 
 /* --- Filters --- */

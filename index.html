@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -61,11 +64,21 @@
                 <option value="all">All Devices</option>
             </select>
         </div>
+        <div class="filter-item">
+            <label for="timezoneSelect">Timezone:</label>
+            <select id="timezoneSelect" class="filter-select" onchange="updateTimezone()">
+                <!-- Populated by JS -->
+            </select>
+        </div>
     </div>
 
     <!-- Drag & Drop Zone -->
     <div class="upload-zone" id="dropZone">
-        <div>📂 <b>Drag & Drop</b> a new NextDNS CSV log here (or click to browse)</div>
+        <div>📂 <b>Drag & Drop</b> a new NextDNS CSV log here</div>
+        <div style="margin-top: 8px; font-size: 0.9rem; color: var(--text-muted);">
+            or <a href="#" onclick="event.stopPropagation(); loadSampleData(); return false;"
+                style="color: var(--primary); text-decoration: underline;">load sample data</a> to test
+        </div>
     </div>
     <input type="file" id="fileInput" accept=".csv" style="display: none;">
 
